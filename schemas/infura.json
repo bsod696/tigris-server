@@ -1,0 +1,30 @@
+{
+  "code": "infura",
+  "display": "Infura",
+  "fields": [
+    {
+      "code": "apiKey",
+      "display": "API key",
+      "fieldType": "string",
+      "secret": true,
+      "required": true,
+      "value": ""
+    },
+    {
+      "code": "apiSecret",
+      "display": "API secret",
+      "fieldType": "password",
+      "secret": true,
+      "required": true,
+      "value": ""
+    },
+    {
+      "code": "endpoint",
+      "display": "Endpoint",
+      "fieldType": "string",
+      "secret": true,
+      "required": true,
+      "value": ""
+    }
+  ]
+}

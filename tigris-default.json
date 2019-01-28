@@ -1,0 +1,18 @@
+{
+  "seedPath": "/etc/tigris/seeds/seed.txt",
+  "mnemonicPath": "/etc/tigris/mnemonics/mnemonic.txt",
+  "caPath": "/etc/ssl/certs/Tigris_OP_Root_CA.pem",
+  "certPath": "/etc/ssl/certs/Tigris_OP.pem",
+  "keyPath": "/etc/ssl/private/Tigris_OP.key",
+  "logLevel": "info",
+  "migrateStatePath": "/etc/tigris/.migrate",
+  "blockchainDir": "/mnt/blockchains",
+  "ofacDataDir": "/opt/tigris-server/sanctions",
+  "coinAtmRadar": {
+    "url": "https://coinatmradar.info/api/tigris/"
+  },
+  "strike": {
+    "baseUrl": "https://api.strike.acinq.co/api/"
+  },
+  "idPhotoCardDir": "/opt/tigris-server/idphotocard"
+}

@@ -1,0 +1,3 @@
+ls src/Css/* | entr elm-css src/Stylesheets.elm
+find src | entr elm-make src/Main.elm --output ../tigris-server/public/elm.js
+find src | entr elm-make src/Tigris.elm --output ../tigris-server/public/tigris-elm.js

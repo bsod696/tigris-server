@@ -1,6 +1,19 @@
-# tigris-server
-tigris server for cryptomat ATM
+# lamassu-server
 
-Addition on DOGECOIN.
-Repo still in development.
-28/01/2019 11.42AM.
+Lamassu remote server.
+
+## Pull Requests
+
+We do not generally accept outside pull requests for new features. Please consult with us before putting a lot of work into a pull request.
+
+## Installation
+
+See [INSTALL.md](INSTALL.md).
+
+## Installation on remote server (only for production)
+See [lamassu-remote-install/README.md](lamassu-remote-install/README.md).
+
+## Running
+```bash
+node bin/lamassu-server --mockSms
+```

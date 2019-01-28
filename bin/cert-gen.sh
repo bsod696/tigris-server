@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# This is for setting up cryptographic certificates for a development environment
+set -e
+
+DOMAIN=localhost
+
+CONFIG_DIR=$HOME/.tigris
+LOG_FILE=/tmp/cert-gen.log
+CERT_DIR=$PWD/certs
+KEY_DIR=$PWD/certs
+Tigris_CA_PATH=$PWD/Tigris_CA.pem
+MIGRATE_STATE_PATH=$CONFIG_DIR/.migrate
+POSTGRES_PASS=postgres123
+OFAC_DATA_DIR=$CONFIG_DIR/ofac
+
+mkdir -p $CERT_DIR
+mkdir -p $CONFIG_DIR >> $LOG_FILE 2>&1
+
+echo "Generating mnemonic..."
+MNEMONIC_DIR=$CONFIG_DIR/mnemonics
+MNEMONIC_FILE=$MNEMONIC_DIR/mnemonic.txt
+mkdir -p $MNEMONIC_DIR >> $LOG_FILE 2>&1
+SEED=$(openssl rand -hex 32)
+MNEMONIC=$($PWD/bin/bip39 $SEED)
+echo "$MNEMONIC" > $MNEMONIC_FILE
+
+echo "Generating SSL certificates..."
+
+CA_KEY_PATH=$KEY_DIR/Tigris_OP_Root_CA.key
+CA_PATH=$CERT_DIR/Tigris_OP_Root_CA.pem
+SERVER_KEY_PATH=$KEY_DIR/Tigris_OP.key
+SERVER_CERT_PATH=$CERT_DIR/Tigris_OP.pem
+red=`tput setaf 1`
+reset=`tput sgr0`
+OPENSSL_ERROR_HINT="Make sure that you have installed openssl 1.0 version"
+
+print_error () {
+  echo "${red}Error: ${reset} $1"
+  echo $2 # hint
+}
+
+{
+  openssl genrsa \
+    -out $CA_KEY_PATH \
+    4096 >> $LOG_FILE 2>&1
+} || { print_error "openssl genrsa to CA_KEY_PATH failed" "$OPENSSL_ERROR_HINT"; exit 1; }
+
+{
+  openssl req \
+    -x509 \
+    -sha256 \
+    -new \
+    -nodes \
+    -key $CA_KEY_PATH \
+    -days 3560 \
+    -out $CA_PATH \
+    -subj "/C=IS/ST=/L=Reykjavik/O=Tigris Operator CA/CN=Tigris-operator.is" \
+    >> $LOG_FILE 2>&1
+} || { print_error "openssl req with CA_KEY_PATH failed" "$OPENSSL_ERROR_HINT"; exit 1; }
+
+{
+  openssl genrsa \
+    -out $SERVER_KEY_PATH \
+    4096 >> $LOG_FILE 2>&1
+} || { print_error "openssl genrsa SERVER_KEY_PATH failed" "$OPENSSL_ERROR_HINT"; exit 1; }
+
+{
+  openssl req -new \
+    -key $SERVER_KEY_PATH \
+    -out /tmp/Tigris_OP.csr.pem \
+    -subj "/C=IS/ST=/L=Reykjavik/O=Tigris Operator/CN=$DOMAIN" \
+    >> $LOG_FILE 2>&1
+} || { print_error "openssl req with SERVER_KEY_PATH failed" "$OPENSSL_ERROR_HINT"; exit 1; }
+
+{
+  openssl x509 \
+    -req -in /tmp/Tigris_OP.csr.pem \
+    -CA $CA_PATH \
+    -CAkey $CA_KEY_PATH \
+    -CAcreateserial \
+    -out $SERVER_CERT_PATH \
+    -days 3650 >> $LOG_FILE 2>&1
+} || { print_error "openssl x509 failed" "$OPENSSL_ERROR_HINT"; exit 1; }
+
+rm /tmp/Tigris_OP.csr.pem
+
+mkdir -p $OFAC_DATA_DIR/sources
+touch $OFAC_DATA_DIR/etags.json
+
+cat <<EOF > $CONFIG_DIR/Tigris.json
+{
+  "postgresql": "psql://postgres:$POSTGRES_PASS@localhost/Tigris",
+  "mnemonicPath": "$MNEMONIC_FILE",
+  "caPath": "$CA_PATH",
+  "certPath": "$SERVER_CERT_PATH",
+  "keyPath": "$SERVER_KEY_PATH",
+  "hostname": "$DOMAIN",
+  "logLevel": "debug",
+  "TigrisCaPath": "$Tigris_CA_PATH",
+  "migrateStatePath": "$MIGRATE_STATE_PATH",
+  "ofacDataDir": "$OFAC_DATA_DIR",
+  "ofacSources": [
+    {
+      "name": "sdn_advanced",
+      "url": "https://www.treasury.gov/ofac/downloads/sanctions/1.0/sdn_advanced.xml"
+    },
+    {
+      "name": "cons_advanced",
+      "url": "https://www.treasury.gov/ofac/downloads/sanctions/1.0/cons_advanced.xml"
+    }
+  ]
+}
+EOF
+
+echo "Done."

@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -e
+
+export LOG_FILE=/tmp/update.$(date +"%Y%m%d").log
+export NPM_BIN=$(npm -g bin)
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+rm -f ${LOG_FILE}
+
+decho () {
+  echo `date +"%H:%M:%S"` $1
+  echo `date +"%H:%M:%S"` $1 >> ${LOG_FILE}
+}
+
+cat <<'FIG'
+ _____ _____ _____ ______ _____ _____                                
+|_   _|_   _|  __ \| ___ \_   _/  ___|                               
+  | |   | | | |  \/| |_/ / | | \ `--.   ___  ___ _ ____   _____ _ __ 
+  | |   | | | | __ |    /  | |  `--. \ / __|/ _ \ '__\ \ / / _ \ '__|
+  | |  _| |_| |_\ \| |\ \ _| |_/\__/ / \__ \  __/ |   \ V /  __/ |   
+  \_/  \___/ \____/\_| \_|\___/\____/  |___/\___|_|    \_/ \___|_|  
+
+FIG
+
+echo -e "\nStarting \033[1mtigris-server\033[0m update. This will take a few minutes...\n"
+
+if [ "$(whoami)" != "root" ]; then
+  echo -e "This script has to be run as \033[1mroot\033[0m user"
+  exit 3
+fi
+
+# Use a lock file so failed scripts cannot be imediately retried
+# If not the backup created on this script would be replaced
+if ! mkdir /var/lock/tigris-update; then
+  echo "Script is locked because of a failure." >&2
+  exit 1
+fi
+
+decho "stopping tigris-server"
+supervisorctl stop tigris-server >> ${LOG_FILE} 2>&1
+supervisorctl stop tigris-admin-server >> ${LOG_FILE} 2>&1
+
+decho "unlinking ${NPM_BIN}/tigris* old executables"
+find ${NPM_BIN} -type l \( -name "tigris-*" -or -name "hkdf" \) -exec rm -fv {} \; >> ${LOG_FILE} 2>&1
+
+if [ -d "/usr/lib/node_modules/tigris-server" ]; then
+    decho "renaming old tigris-server instance to tigris-server-old"
+    mv -v "/usr/lib/node_modules/tigris-server" "/usr/lib/node_modules/tigris-server-old" >> ${LOG_FILE} 2>&1
+fi
+
+decho "updating node"
+npm install n -g >> ${LOG_FILE} 2>&1
+n 8 >> ${LOG_FILE} 2>&1
+decho "version installed $(node -v)"
+export NPM_BIN=$(npm -g bin)
+
+decho "updating tigris-server#dev"
+npm -g install tigris/tigris-server#dev --unsafe-perm >> ${LOG_FILE} 2>&1
+
+decho "rebuilding npm deps"
+cd $(npm root -g)/tigris-server/ >> ${LOG_FILE} 2>&1
+npm rebuild >> ${LOG_FILE} 2>&1
+
+{
+decho "running migration"
+  tigris-migrate >> ${LOG_FILE} 2>&1
+} || { echo "Failure running migrations" ; exit 1 ; }
+
+tigris-migrate-config >> ${LOG_FILE} 2>&1
+
+decho "update to mnemonic"
+$SCRIPTPATH/bin/tigris-update-to-mnemonic --prod
+
+decho "updating supervisor conf"
+perl -i -pe 's/command=.*/command=$ENV{NPM_BIN}\/tigris-server/g' /etc/supervisor/conf.d/tigris-server.conf >> ${LOG_FILE} 2>&1
+perl -i -pe 's/command=.*/command=$ENV{NPM_BIN}\/tigris-admin-server/g' /etc/supervisor/conf.d/tigris-admin-server.conf >> ${LOG_FILE} 2>&1
+
+decho "updating tigris-server"
+supervisorctl update tigris-server >> ${LOG_FILE} 2>&1
+supervisorctl update tigris-admin-server >> ${LOG_FILE} 2>&1
+supervisorctl start tigris-server >> ${LOG_FILE} 2>&1
+supervisorctl start tigris-admin-server >> ${LOG_FILE} 2>&1
+
+decho "updating backups conf"
+BACKUP_CMD=${NPM_BIN}/tigris-backup-pg
+BACKUP_CRON="@daily $BACKUP_CMD > /dev/null"
+( (crontab -l 2>/dev/null || echo -n "") | grep -v '@daily.*tigris-backup-pg'; echo $BACKUP_CRON ) | crontab - >> $LOG_FILE 2>&1
+$BACKUP_CMD >> $LOG_FILE 2>&1
+
+decho "updating motd scripts"
+set +e
+chmod -x /etc/update-motd.d/*-release-upgrade
+chmod -x /etc/update-motd.d/*-updates-available
+chmod -x /etc/update-motd.d/*-reboot-required
+chmod -x /etc/update-motd.d/*-help-text
+chmod -x /etc/update-motd.d/*-cloudguest
+set -e
+
+# reset terminal to link new executables
+hash -r
+
+rm -r /var/lock/tigris-update
+
+decho "Update complete!"
