@@ -12,7 +12,7 @@ sudo apt-get install postgresql postgresql-contrib postgresql-server-dev-9.5 lib
 ## Set up PostgreSQL
 
 ```
-sudo -u postgres createdb lamassu
+sudo -u postgres createdb tigris
 sudo -u postgres psql postgres
 ```
 
