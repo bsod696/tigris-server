@@ -32,7 +32,7 @@ scratch/
 seeds/
 mnemonics/
 certs/
-lamassu.json
+tigris.json
 
 terraform.*
 .terraform
