@@ -1,6 +1,6 @@
 # Preliminaries for Ubuntu 16.04
 
-Installation for other distros may be slightly different. This assumes NodeJS 8.3 or higher and npm 5.6 are already installed. All of this is done in the lamassu-server directory.
+Installation for other distros may be slightly different. This assumes NodeJS 8.3 or higher and npm 5.6 are already installed. All of this is done in the tigris-server directory.
 
 ## Packages
 
@@ -55,16 +55,16 @@ bash bin/cert-gen.sh
 ```
 
 Notes: 
-  - This will create a ``.lamassu`` directory in your home directory.
+  - This will create a ``.tigris`` directory in your home directory.
   - The script uses the current openssl LTS version (1.0.2g) and will not work on v1.1.
   
 ## Set up database
 
-Important: lamassu-migrate currently gripes about a QueryResultError. Ignore this, it works anyway. Also, ignore Debug lines from lamassu-apply-defaults.
+Important: tigris-migrate currently gripes about a QueryResultError. Ignore this, it works anyway. Also, ignore Debug lines from tigris-apply-defaults.
 
 ```
-node bin/lamassu-migrate
-node bin/lamassu-apply-defaults
+node bin/tigris-migrate
+node bin/tigris-apply-defaults
 ```
 
 ## Register admin user
@@ -72,7 +72,7 @@ node bin/lamassu-apply-defaults
 You'll use this generated URL in the brower in moment.
 
 ```
-node bin/lamassu-register admin
+node bin/tigris-register admin
 ```
 
 ## Run lamassu-admin-server
@@ -80,27 +80,27 @@ node bin/lamassu-register admin
 In first terminal window:
 
 ```
-node bin/lamassu-admin-server --dev
+node bin/tigris-admin-server --dev
 ```
 
 ## Complete configuration
 
-Paste the URL from lamassu-register exactly as output, into a browser (chrome or firefox).
+Paste the URL from tigris-register exactly as output, into a browser (chrome or firefox).
 
 **Important**: the host must be localhost. Tell your browser to trust the certificate even though it's not signed by a recognized CA.
 
 Go to all the required, unconfigured red fields and choose some values. Choose mock services whenever available.
 
-## Run lamassu-server
+## Run tigris-server
 
 In second terminal window:
 
 ```
-node bin/lamassu-server --mockSms
+node bin/tigris-server --mockSms
 ```
 
-## Add a lamassu-machine
+## Add a tigris-machine
 
-Click on ``+ Add Machine`` in the sidebar. Type in a name for your machine and click **Pair**. Open up development tools to show the JavaScript console and copy the totem. You will use this to run lamassu-machine. This pairing totem expires after an hour.
+Click on ``+ Add Machine`` in the sidebar. Type in a name for your machine and click **Pair**. Open up development tools to show the JavaScript console and copy the totem. You will use this to run tigris-machine. This pairing totem expires after an hour.
 
-Now continue with lamassu-machine instructions from the ``INSTALL.md`` file in lamassu-machine.
+Now continue with lamassu-machine instructions from the ``INSTALL.md`` file in tigris-machine.
