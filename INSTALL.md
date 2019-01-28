@@ -75,7 +75,7 @@ You'll use this generated URL in the brower in moment.
 node bin/tigris-register admin
 ```
 
-## Run lamassu-admin-server
+## Run tigris-admin-server
 
 In first terminal window:
 
