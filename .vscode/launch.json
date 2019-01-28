@@ -8,7 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "program": "${workspaceRoot}/bin/tigris-server",
+      "program": "${workspaceRoot}/bin/lamassu-server",
       "cwd": "${workspaceRoot}",
       "args": ["--mockSms"]
     },
